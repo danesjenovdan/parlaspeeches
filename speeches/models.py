@@ -214,6 +214,12 @@ class Speech(Versionable, Timestampable, models.Model):
     end_time = PopoloDateTimeField(blank=True, null=True,
                                    help_text='End time')
 
+    start_time_stamp = models.BigIntegerField(blank=True, null=True,
+                               				  help_text='Start time stamp')
+
+    end_time_stamp = models.BigIntegerField(blank=True, null=True,
+                                			help_text='End time stamp')
+
 
 class Session(Timestampable, models.Model):
     """Sessions that happened in parliament."""
