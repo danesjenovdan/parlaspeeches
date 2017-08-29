@@ -132,6 +132,9 @@ class Person(Timestampable, models.Model):
                                  default=True,
                                  help_text='a generic active or not toggle')
 
+    def __str__(self):
+        return self.name + " " + str(self.id)
+
 
 class Organization(Timestampable, models.Model):
     """A group with a common purpose or reason
@@ -183,7 +186,7 @@ class Organization(Timestampable, models.Model):
     url_name = 'organization-detail'
 
     def __str__(self):
-        return self.name + " " + unicode(self.id)
+        return self.name + " " + str(self.id)
 
 
 class Speech(Versionable, Timestampable, models.Model):
@@ -223,6 +226,10 @@ class Speech(Versionable, Timestampable, models.Model):
                                 			help_text='End time stamp')
 
 
+    def __str__(self):
+        return self.speaker.name + " " + str(self.id)
+
+
 class Session(Timestampable, models.Model):
     """Sessions that happened in parliament."""
 
@@ -257,7 +264,7 @@ class Session(Timestampable, models.Model):
                                     help_text='Is session in review?')
 
     def __str__(self):
-        return unicode(self.name) + ",  " + unicode(self.organization.name)
+        return self.name + ",  " + self.organization.name
 
 
 class Link(Timestampable, models.Model):
