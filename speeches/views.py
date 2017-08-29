@@ -87,12 +87,12 @@ def toMS(t, st):
     return (seconds* 1000)
 
 
-def getSpeech(request, video_id):
+def getSpeeches(request, video_id):
     data = []
     persons = Person.objects.all()
     p_data = {person.id: {'name': person.name,
                           'image_url': person.gov_picture_url} for person in persons}
-    speeches = Speech.objects.filter(video_id=str(video_id))
+    speeches = Speech.objects.filter(video_id=str(video_id)).order_by('start_time_stamp')
     print (speeches)
     for speech in speeches:
         sp_data = {'id': speech.id,
