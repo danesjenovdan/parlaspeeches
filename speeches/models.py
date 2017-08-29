@@ -200,6 +200,8 @@ class Speech(Versionable, Timestampable, models.Model):
 
     content = models.TextField(help_text='Words spoken')
 
+    video_id = models.TextField(help_text='Video id', blank=True, null=True)
+
     order = models.IntegerField(blank=True, null=True,
                                 help_text='Order of speech')
 
