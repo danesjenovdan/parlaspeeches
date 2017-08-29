@@ -197,7 +197,6 @@ class Speech(Versionable, Timestampable, models.Model):
 
     party = models.ForeignKey('Organization',
                               help_text='The party of the person making the speech',
-                              default=2,
                               null=True,
                               blank=True)
 
