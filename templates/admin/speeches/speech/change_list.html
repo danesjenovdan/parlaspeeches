@@ -73,6 +73,7 @@
       {% endblock %}
       <form method="post" action="/upload_srt/" enctype="multipart/form-data">
         {% csrf_token %}
+        <input type="text" placeholder="Video ID" name="video_id"><br>
         <input type="file" name="myfile">
         <button type="submit">Upload SRT</button>
       </form>

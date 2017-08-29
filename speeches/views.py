@@ -21,22 +21,22 @@ SOLR_URL = 'http://localhost:8983/solr/parlaspeeches'
 
 
 def upload_srt(request):
-    print("Sejv fajla")
     if request.method == 'POST' and request.FILES['myfile']:
         myfile = request.FILES['myfile']
+        video_id = request.POST['video_id']
         fs = FileSystemStorage()
         filename = fs.save(myfile.name, myfile)
         uploaded_file_url = fs.url(filename)
-        parser(str(MEDIA_ROOT+'/'+filename), str(filename))
+        parser(str(MEDIA_ROOT+'/'+filename), str(filename), video_id)
         return redirect('/admin/speeches/speech/')
     return redirect('/admin/speeches/speech/')
 
 
-def parser(filename, myfile):
+def parser(filename, myfile, video_id):
     spl = []
     tab = []
     tb = 0
-    if len(Speech.objects.filter(video_id=str(myfile))) == 0:
+    if len(Speech.objects.filter(video_id=video_id)) == 0:
         person = re.compile("^:[A-ZŽČŠĐĆ]*:")
         with open(filename) as f:
             res = [list(g) for b,g in groupby(f, lambda x: bool(x.strip())) if b]
@@ -57,7 +57,7 @@ def parser(filename, myfile):
                                             content=''.join(spl['speeches']).replace(str(':'+spl['person']+':'), ''),
                                             start_time_stamp=spl['st'],
                                             end_time_stamp = tb,
-                                            video_id = myfile
+                                            video_id = video_id
                                 )
                             speech.save()
                             spl = []
@@ -75,7 +75,7 @@ def parser(filename, myfile):
                 content=''.join(spl[0]['speeches']).replace(str(':'+spl[0]['person']+':'), ''),
                 start_time_stamp=spl[0]['st'],
                 end_time_stamp = tb,
-                video_id = myfile
+                video_id = video_id
                 )
             speech.save()
 
@@ -89,17 +89,20 @@ def toMS(t, st):
 
 def getSpeech(request, video_id):
     data = []
+    persons = Person.objects.all()
+    p_data = {person.id: {'name': person.name,
+                          'image_url': person.gov_picture_url} for person in persons}
     speeches = Speech.objects.filter(video_id=str(video_id))
     print (speeches)
     for speech in speeches:
-        data.append({'name':speech.speaker.name,
-                     'content': speech.content,
-                     'video_id': speech.video_id,
-                     'start_time_stamp': speech.start_time_stamp,
-                     'end_time_stamp': speech.end_time_stamp
-
-                    }
-                   )
+        sp_data = {'id': speech.id,
+                   'content': speech.content,
+                   'video_id': speech.video_id,
+                   'start_time_stamp': speech.start_time_stamp,
+                   'end_time_stamp': speech.end_time_stamp,
+                   }
+        sp_data.update(p_data[speech.speaker_id])
+        data.append(sp_data)
     return JsonResponse(data, safe=False)
 
 
