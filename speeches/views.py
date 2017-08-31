@@ -49,16 +49,16 @@ def parser(filename, myfile, video_id):
                         per = Person(name_parser=np)
                         per.save()
                     if len(tab) != 0:
-                        print (person.match(tab[0]).group().replace(':',''))
-                        print (np)
                         if person.match(tab[0]).group().replace(':','') != np:
                             spl = (spl[0])
+                            con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
+                            con = con.replace('\n', '')
                             speech = Speech(speaker=Person.objects.get(name_parser=spl['person']),
-                                            content=''.join(spl['speeches']).replace(str(':'+spl['person']+':'), ''),
+                                            content=con.lstrip(' '),
                                             start_time_stamp=spl['st'],
                                             end_time_stamp = tb,
-                                            video_id = video_id
-                                )
+                                            video_id = video_id)
+
                             speech.save()
                             spl = []
                             tab = []
