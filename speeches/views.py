@@ -6,7 +6,7 @@ from django.core.files.storage import FileSystemStorage
 from django.shortcuts import render
 from django.http import JsonResponse
 
-from parlaspeeches.settings import MEDIA_ROOT
+from django.conf import settings
 from django.http import JsonResponse
 
 from .models import Speech, Person
@@ -15,9 +15,10 @@ import json
 import requests
 import re
 import datetime
+import pysolr
 
 
-SOLR_URL = 'http://localhost:8983/solr/parlaspeeches'
+solr = pysolr.Solr(settings.SOLR_URL, timeout=10)
 
 
 def upload_srt(request):
@@ -27,7 +28,7 @@ def upload_srt(request):
         fs = FileSystemStorage()
         filename = fs.save(myfile.name, myfile)
         uploaded_file_url = fs.url(filename)
-        parser(str(MEDIA_ROOT+'/'+filename), str(filename), video_id)
+        parser(str(settings.MEDIA_ROOT+'/'+filename), str(filename), video_id)
         return redirect('/admin/speeches/speech/')
     return redirect('/admin/speeches/speech/')
 
@@ -116,74 +117,39 @@ def getSpeeches(request, video_id):
 
 # SOLR STUFF
 
-
 def exportSpeeches():
     speeches = Speech.objects.all()
 
     i=0
+    output = []
     for speech in speeches:
-        output = [{
-            'id': 'g' + str(speech.id),
-            'speaker_name': speech.speaker.name,
-            'speaker_i': speech.speaker.id,
-            'timestamp_dt': speech.start_time_stamp,
-            'content_t': speech.content,
-            'tip_t': 'govor'
-        }]
+        output.append({
+            'id': str(speech.id),
+            'speaker_name': str(speech.speaker.name),
+            'speaker_id': str(speech.speaker.id),
+            'speaker_url': str(speech.speaker.gov_picture_url),
+            'timestamp_start': str(speech.start_time_stamp),
+            'timestamp_end': str(speech.end_time_stamp),
+            'content': str(speech.content),
+        })
+    print(output)
+    solr.add(output)
 
-        output = json.dumps(output)
-
-        if i % 100 == 0:
-            url = SOLR_URL + '/update?commit=true'
-            r = requests.post(url,
-                              data=output,
-                              headers={'Content-Type': 'application/json'})
-
-
-        else:
-            r = requests.post(SOLR_URL + '/update',
-                              data=output,
-                              headers={'Content-Type': 'application/json'})
-
-        i = i + 1
     return 1
 
 
 def search(request, words):
-    rows = 50
-    start_page = 0
-    # solr_url = 'http://127.0.0.1:8983/solr/knedl/select?wt=json'
-    solr_url = SOLR_URL + '/select?wt=json'
-
-    q = words.replace('+', ' ')
-
-    solr_params = {
-        'q': 'content_t:' + q.replace('IN', 'AND').replace('!', '+'),
-        'facet': 'true',
-        'facet.range': 'datetime_dt',
-        'facet.range.start': '2014-01-01T00:00:00.000Z',
-        'facet.range.gap': '%2B1MONTHS',
-        'facet.range.end': 'NOW',
-        # 'sort': 'datetime_dt desc',
+    results = solr.search(words, **{
         'hl': 'true',
-        'hl.fl': 'content_t',
-        'hl.fragmenter': 'regex',
-        'hl.regex.pattern': '\w[^\.!\?]{1,600}[\.!\?]',
+        'hl.fl': 'content',
         'hl.fragsize': '5000',
         'hl.mergeContiguous': 'false',
+        'hl.fragmenter': 'regex',
+        'hl.regex.pattern': '\w[^\.!\?]{1,600}[\.!\?]',
         'hl.snippets': '1',
-        'fq': 'tip_t:govor',
-        'rows': str(rows),
-        'start': str(int(start_page) * rows) if start_page else '0',
-    }
+    })
+    out = [result for result in results]
+    return JsonResponse(out, safe=False)
 
-    # print q + 'asd'
-
-    url = solr_url
-    for key in solr_params:
-        url = url + '&' + key + '=' + solr_params[key]
-
-    # print url
-
-    r = requests.get(url).json()
-    return JsonResponse(r)
+def delete():
+    solr.delete(q='*:*')
