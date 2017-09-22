@@ -35,23 +35,29 @@ def upload_srt(request):
 
 def parser(filename, myfile, video_id):
     spl = []
+    b = []
     tab = []
     tb = 0
+    spe = ""
     if len(Speech.objects.filter(video_id=video_id)) == 0:
         person = re.compile("^:[A-ZŽČŠĐĆ]*:")
         with open(filename) as f:
             res = [list(g) for b,g in groupby(f, lambda x: bool(x.strip())) if b]
-            for spe in res:
-                print (spe)
-                print ("ivan")
-                name_parser = (person.match(spe[2]))
+            for spe in res[1:]:
+                if len(spe) >= 3:
+                    b.append(spe[0])
+                    b.append(spe[1:])
+                    spe = b
+                    b = []
+                    spe[1] = ''.join(spe[1])
+                name_parser = (person.match(spe[1].replace(' ','')))
                 if name_parser is not None:
                     np = name_parser.group().replace(':','')
                     if len(Person.objects.filter(name_parser=np)) == 0:
                         per = Person(name_parser=np)
                         per.save()
                     if len(tab) != 0:
-                        if person.match(tab[0]).group().replace(':','') != np:
+                        if person.match(tab[0].replace(' ','')).group().replace(':','') != np:
                             spl = (spl[0])
                             con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
                             con = con.replace('\n', '')
@@ -64,28 +70,29 @@ def parser(filename, myfile, video_id):
                             speech.save()
                             spl = []
                             tab = []
-                            tab.append(spe[2])
-                            spl.append({'person': np,'speeches': tab, 'st': toMS(spe[1], 0), 'et': 0})
+                            tab.append(spe[1])
+                            spl.append({'person': np,'speeches': tab, 'st': toMS(spe[0], 0), 'et': 0})
                     else:
-                        tab.append(spe[2])
-                        spl.append({'person': np,'speeches': tab, 'st': toMS(spe[1], 0), 'et': 0})
+                        tab.append(spe[1])
+                        spl.append({'person': np,'speeches': tab, 'st': toMS(spe[0], 0), 'et': 0})
                 else:
-                    tab.append(spe[2])
-                    tb = toMS(spe[1], 1)
+                    tab.append(spe[1])
+                    tb = toMS(spe[0], 1)
+            spl = (spl[0])
+            con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
+            con = con.replace('\n', '')
+            speech = Speech(speaker=Person.objects.get(name_parser=spl['person']),
+                            content=con.lstrip(' '),
+                            start_time_stamp=spl['st'],
+                            end_time_stamp = tb,
+                            video_id = video_id)
 
-            speech = Speech(speaker=Person.objects.get(name_parser=spl[0]['person']),
-                content=''.join(spl[0]['speeches']).replace(str(':'+spl[0]['person']+':'), ''),
-                start_time_stamp=spl[0]['st'],
-                end_time_stamp = tb,
-                video_id = video_id
-                )
             speech.save()
-
 
 def toMS(t, st):
     spli = t.split(' --> ')
-    t = spli[st].replace(',',":").split(':')
-    seconds = (int(t[0]) * 3600) + (int(t[1]) * 60) + int(t[2]) + (int(t[3]) * float(0.001))
+    t = spli[st].replace('.',":").split(':')
+    seconds = (float(t[0]) * 3600.0) + (float(t[1]) * 60.0) + float(t[2]) + (float(t[3]) * float(0.001))
     return (seconds* 1000)
 
 
