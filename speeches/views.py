@@ -117,20 +117,20 @@ def getSpeeches(request, video_id):
 
 # SOLR STUFF
 
-def exportSpeeches():
-    speeches = Speech.objects.all()
+def exportSpeeches(video_id):
+    speeches = Speech.objects.filter(video_id=video_id)
 
     i=0
     output = []
     for speech in speeches:
         output.append({
             'id': str(speech.id),
-            'speaker_name': str(speech.speaker.name),
+            'speaker_name_t': str(speech.speaker.name),
             'speaker_id': str(speech.speaker.id),
             'speaker_url': str(speech.speaker.gov_picture_url),
             'timestamp_start': str(speech.start_time_stamp),
             'timestamp_end': str(speech.end_time_stamp),
-            'content': str(speech.content),
+            'content_t': str(speech.content),
         })
     print(output)
     solr.add(output)
@@ -151,5 +151,12 @@ def search(request, words):
     out = [result for result in results]
     return JsonResponse(out, safe=False)
 
-def delete():
+def delete_all():
     solr.delete(q='*:*')
+
+
+def delete(ids):
+    print(ids)
+    id_list = list(map(str, ids))
+    print(id_list)
+    solr.delete(id=id_list)

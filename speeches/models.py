@@ -132,6 +132,8 @@ class Person(Timestampable, models.Model):
                                  default=True,
                                  help_text='a generic active or not toggle')
 
+    image = models.ImageField(upload_to='images/', height_field=None, width_field=None, max_length=1000, null=True, blank=True)
+
     def __str__(self):
         return self.name + " " + str(self.id)
 
