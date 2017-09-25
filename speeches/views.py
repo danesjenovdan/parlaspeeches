@@ -20,6 +20,8 @@ import pysolr
 
 solr = pysolr.Solr(settings.SOLR_URL, timeout=10)
 
+def index(request):
+    return JsonResponse({"index": True})
 
 def upload_srt(request):
     if request.method == 'POST' and request.FILES['myfile']:
@@ -102,7 +104,7 @@ def getSpeeches(request, video_id):
     p_data = {person.id: {'name': person.name,
                           'image_url': person.gov_picture_url} for person in persons}
     speeches = Speech.objects.filter(video_id=str(video_id)).order_by('start_time_stamp')
-    print (speeches)
+    #print (speeches)
     for speech in speeches:
         sp_data = {'id': speech.id,
                    'content': speech.content,
@@ -132,7 +134,7 @@ def exportSpeeches(video_id):
             'timestamp_end': str(speech.end_time_stamp),
             'content_t': str(speech.content),
         })
-    print(output)
+    #print(output)
     solr.add(output)
 
     return 1
@@ -142,11 +144,8 @@ def search(request, words):
     results = solr.search(words, **{
         'hl': 'true',
         'hl.fl': 'content',
-        'hl.fragsize': '5000',
-        'hl.mergeContiguous': 'false',
-        'hl.fragmenter': 'regex',
-        'hl.regex.pattern': '\w[^\.!\?]{1,600}[\.!\?]',
-        'hl.snippets': '1',
+        'hl.tag.pre': '<em>',
+        'hl.tag.post': '</em>'
     })
     out = [result for result in results]
     return JsonResponse(out, safe=False)
