@@ -9,7 +9,8 @@ from django.db.models import Count
 
 # Create your views here.
 def collect(request, type_):
-    Vote(type_of=type_).save()
+    note = request.GET.get('note', '')
+    Vote(type_of=type_, note=note).save()
     return JsonResponse({'status': 'added'})
 
 
