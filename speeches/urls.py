@@ -8,5 +8,5 @@ urlpatterns = [
     url(r'^$', index, name='home'),
     url(r'^upload_srt/$', upload_srt, name='upload_srt'),
     url(r'^getSpeeches/(?P<video_id>.+)', getSpeeches),
-    url(r'^q/(?P<words>[ÖÜØÄÂÁÉÓÚÍÎöüøäâáéóúíîčćšžČĆŠŽa-zA-Z0-9 \-\+!"%\.,]+)', search),
+    url(r'^q/(?P<video_id>.+)/(?P<words>[ÖÜØÄÂÁÉÓÚÍÎöüøäâáéóúíîčćšžČĆŠŽa-zA-Z0-9 \-\+!"%\.,]+)', search),
     ]

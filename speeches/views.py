@@ -41,55 +41,60 @@ def parser(filename, myfile, video_id):
     tab = []
     tb = 0
     spe = ""
-    if len(Speech.objects.filter(video_id=video_id)) == 0:
-        person = re.compile("^:[A-ZŽČŠĐĆ]*:")
-        with open(filename) as f:
-            res = [list(g) for b,g in groupby(f, lambda x: bool(x.strip())) if b]
-            for spe in res[1:]:
-                if len(spe) >= 3:
-                    b.append(spe[0])
-                    b.append(spe[1:])
-                    spe = b
-                    b = []
-                    spe[1] = ''.join(spe[1])
-                name_parser = (person.match(spe[1].replace(' ','')))
-                if name_parser is not None:
-                    np = name_parser.group().replace(':','')
-                    if len(Person.objects.filter(name_parser=np)) == 0:
-                        per = Person(name_parser=np)
-                        per.save()
-                    if len(tab) != 0:
-                        if person.match(tab[0].replace(' ','')).group().replace(':','') != np:
-                            spl = (spl[0])
-                            con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
-                            con = con.replace('\n', '')
-                            speech = Speech(speaker=Person.objects.get(name_parser=spl['person']),
-                                            content=con.lstrip(' '),
-                                            start_time_stamp=spl['st'],
-                                            end_time_stamp = tb,
-                                            video_id = video_id)
+    speeches = Speech.objects.filter(video_id=video_id)
+    if speeches:
+        
+        #print(solr.delete(q='video_id:'+str(video_id)))
+        speeches.delete()
 
-                            speech.save()
-                            spl = []
-                            tab = []
-                            tab.append(spe[1])
-                            spl.append({'person': np,'speeches': tab, 'st': toMS(spe[0], 0), 'et': 0})
-                    else:
+    person = re.compile("^:[A-ZŽČŠĐĆ]*:")
+    with open(filename) as f:
+        res = [list(g) for b,g in groupby(f, lambda x: bool(x.strip())) if b]
+        for spe in res[1:]:
+            b.append(spe[0])
+            b.append(spe[1:])
+            spe = b
+            b = []
+            spe[1] = ''.join(spe[1])
+            name_parser = (person.match(spe[1].replace(' ','')))
+            if name_parser is not None:
+                np = name_parser.group().replace(':','')
+                if len(Person.objects.filter(name_parser=np)) == 0:
+                    per = Person(name_parser=np)
+                    per.save()
+                if len(tab) != 0:
+                    if person.match(tab[0].replace(' ','')).group().replace(':','') != np:
+                        spl = (spl[0])
+                        con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
+                        con = con.replace('\n', '')
+                        speech = Speech(speaker=Person.objects.get(name_parser=spl['person']),
+                                        content=con.lstrip(' '),
+                                        start_time_stamp=spl['st'],
+                                        end_time_stamp = tb,
+                                        video_id = video_id)
+
+                        speech.save()
+                        spl = []
+                        tab = []
                         tab.append(spe[1])
                         spl.append({'person': np,'speeches': tab, 'st': toMS(spe[0], 0), 'et': 0})
                 else:
                     tab.append(spe[1])
-                    tb = toMS(spe[0], 1)
-            spl = (spl[0])
-            con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
-            con = con.replace('\n', '')
-            speech = Speech(speaker=Person.objects.get(name_parser=spl['person']),
-                            content=con.lstrip(' '),
-                            start_time_stamp=spl['st'],
-                            end_time_stamp = tb,
-                            video_id = video_id)
+                    spl.append({'person': np,'speeches': tab, 'st': toMS(spe[0], 0), 'et': 0})
+            else:
+                tab.append(spe[1])
+                tb = toMS(spe[0], 1)
+        spl = (spl[0])
+        con = ''.join(spl['speeches']).replace(str(':'+spl['person']+':'), '')
+        con = con.replace('\n', '')
+        speech = Speech(speaker=Person.objects.get(name_parser=spl['person']),
+                        content=con.lstrip(' '),
+                        start_time_stamp=spl['st'],
+                        end_time_stamp = tb,
+                        video_id = video_id)
 
-            speech.save()
+        speech.save()
+        exportSpeeches(video_id)
 
 def toMS(t, st):
     spli = t.split(' --> ')
@@ -127,7 +132,8 @@ def exportSpeeches(video_id):
     for speech in speeches:
         output.append({
             'id': str(speech.id),
-            'speaker_name_t': str(speech.speaker.name),
+            'video_id': str(video_id),
+            'speaker_name_t': str(speech.speaker.name) if speech.speaker.name else 'neki',
             'speaker_id': str(speech.speaker.id),
             'speaker_url': str(speech.speaker.gov_picture_url),
             'timestamp_start': str(speech.start_time_stamp),
@@ -140,22 +146,19 @@ def exportSpeeches(video_id):
     return 1
 
 
-def search(request, words):
+def search(request, video_id, words):
     results = solr.search(words, **{
+        'df': 'content_t',
         'hl': 'true',
-        'hl.fl': 'content',
-        'hl.tag.pre': '<em>',
-        'hl.tag.post': '</em>'
+        'hl.fl': 'content_t',
+        'hl.fragsize': '0',
+        'fq': 'video_id:'+video_id
     })
+    print(vars(results))
     out = [result for result in results]
+    for i, o in enumerate(out):
+        out[i]['content_t'] = results.highlighting[out[i]['id']]['content_t'][0]
     return JsonResponse(out, safe=False)
 
 def delete_all():
     solr.delete(q='*:*')
-
-
-def delete(ids):
-    print(ids)
-    id_list = list(map(str, ids))
-    print(id_list)
-    solr.delete(id=id_list)
