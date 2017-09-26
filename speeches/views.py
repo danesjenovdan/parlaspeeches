@@ -107,7 +107,7 @@ def getSpeeches(request, video_id):
     data = []
     persons = Person.objects.all()
     p_data = {person.id: {'name': person.name,
-                          'image_url': person.gov_picture_url} for person in persons}
+                          'image_url': person.image.url} for person in persons}
     speeches = Speech.objects.filter(video_id=str(video_id)).order_by('start_time_stamp')
     #print (speeches)
     for speech in speeches:
@@ -133,9 +133,9 @@ def exportSpeeches(video_id):
         output.append({
             'id': str(speech.id),
             'video_id': str(video_id),
-            'speaker_name_t': str(speech.speaker.name) if speech.speaker.name else 'neki',
+            'speaker_name': str(speech.speaker.name) if speech.speaker.name else 'neki',
             'speaker_id': str(speech.speaker.id),
-            'speaker_url': str(speech.speaker.gov_picture_url),
+            'speaker_url': str(speech.speaker.image.url),
             'timestamp_start': str(speech.start_time_stamp),
             'timestamp_end': str(speech.end_time_stamp),
             'content_t': str(speech.content),
@@ -154,7 +154,7 @@ def search(request, video_id, words):
         'hl.fragsize': '0',
         'fq': 'video_id:'+video_id
     })
-    print(vars(results))
+    #print(vars(results))
     out = [result for result in results]
     for i, o in enumerate(out):
         out[i]['content_t'] = results.highlighting[out[i]['id']]['content_t'][0]
