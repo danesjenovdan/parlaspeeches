@@ -49,7 +49,7 @@ def parser(filename, myfile, video_id):
 
     person = re.compile("^:[A-ZŽČŠĐĆ]*:")
     with open(filename) as f:
-        res = [list(g) for b,g in groupby(f, lambda x: bool(x.strip())) if b]
+        res = [list(g) for b,g in groupby(f, lambda x: bool(x.replace('\n', ''))) if b]
         for spe in res[1:]:
             b.append(spe[0])
             b.append(spe[1:])
@@ -107,7 +107,7 @@ def getSpeeches(request, video_id):
     data = []
     persons = Person.objects.all()
     p_data = {person.id: {'name': person.name,
-                          'image_url': person.image.url} for person in persons}
+                          'image_url': person.image.url if person.image else ''} for person in persons}
     speeches = Speech.objects.filter(video_id=str(video_id)).order_by('start_time_stamp')
     #print (speeches)
     for speech in speeches:
@@ -135,7 +135,7 @@ def exportSpeeches(video_id):
             'video_id': str(video_id),
             'speaker_name': str(speech.speaker.name) if speech.speaker.name else 'neki',
             'speaker_id': str(speech.speaker.id),
-            'speaker_url': str(speech.speaker.image.url),
+            'speaker_url': str(speech.speaker.image.url) if speech.speaker.image else '',
             'timestamp_start': str(speech.start_time_stamp),
             'timestamp_end': str(speech.end_time_stamp),
             'content_t': str(speech.content),
