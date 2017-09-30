@@ -152,6 +152,7 @@ def search(request, video_id, words):
         'hl': 'true',
         'hl.fl': 'content_t',
         #'hl.fragsize': '0',
+        'rows': '10000000',
         'fq': 'video_id:' + video_id
     })
     #print(vars(results))
