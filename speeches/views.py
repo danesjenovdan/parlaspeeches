@@ -151,13 +151,13 @@ def search(request, video_id, words):
         'df': 'content_t',
         'hl': 'true',
         'hl.fl': 'content_t',
-        'hl.fragsize': '0',
-        'fq': 'video_id:'+video_id
+        #'hl.fragsize': '0',
+        'fq': 'video_id:' + video_id
     })
     #print(vars(results))
     out = [result for result in results]
     for i, o in enumerate(out):
-        out[i]['content_t'] = results.highlighting[out[i]['id']]['content_t'][0]
+        out[i]['highlight'] = results.highlighting[out[i]['id']]['content_t'][0]
     return JsonResponse(out, safe=False)
 
 def delete_all():
